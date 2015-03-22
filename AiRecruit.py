@@ -6,25 +6,23 @@ Created on 2014-4-22
 # coding=utf-8
 
 import os
-import re
 import sys
-import time
-import locale
-from Navigator import Navigator
 
-def printSecSepor(self) :
-	print ""
-	print "========================================================================"
-	print "========================================================================"
-	print "========================================================================"
-	print ""
+from ss.util.Toolkit import Toolkit
+from ss.util.Navigator import Navigator
+from ss.util.HtmlParser import TableParser
+
+class ResumeParser(TableParser):
+	def __init__(self, tagId="", tagIdx=0):
+		TableParser.__init__(self, tagId, tagIdx)
 		
-def saveFileContent(fileName, fileData):
-	fileObj = open(fileName, "wb") 
+	def handle_starttag(self, tag, attrs):
+		TableParser.handle_starttag(self, tag, attrs)
+		
+		if len(self.tagPath)>=4 and self.tagPath[1]=="tbody" and self.tagPath[2]=="tr" and self.tagPath[3]=="td":
+			if self.colIdx==0 and self.curTag=="a":
+				self.dataList[self.rowIdx][self.colIdx].append(self.attrDict["href"])
 	
-	fileObj.write(fileData)
-	fileObj.close()
-		
 class Recruit :
 	def __init__(self, userName, userPswd, workDir, loginName, loginPswd, debug=False):
 		self.debug = debug
@@ -39,13 +37,13 @@ class Recruit :
 		self.endSecond= 0
 		
 		self.userName = userName
-		self.navigator = Navigator("ailk\\" + userName, userPswd)
+		self.navigator = Navigator("ai\\" + userName, userPswd)
 		
 		self.loginName = loginName
 		self.loginPswd = loginPswd
 		
 	def login(self):		
-		loginUrl = "http://ailkjobs.asiainfo-linkage.com.cn/admin/login"
+		loginUrl = "http://aijob.asiainfo.com/admin/login"
 		self.navigator.call(loginUrl)
 		#pageHtml = self.navigator.read()
 		#print "loginInfo_pageHtml:%s" % (pageHtml)
@@ -54,11 +52,11 @@ class Recruit :
 		resVal = False
 		
 		print "++++++++ verify_code_step"
-		pageUrl = "http://ailkjobs.asiainfo-linkage.com.cn/img/check.php"
+		pageUrl = "http://aijob.asiainfo.com/img/check.php"
 		
 		while resVal == False:
 			fotoData = self.navigator.obtain(pageUrl)		
-			saveFileContent((self.workDir + "/ailkjob_veriCode_%d.jpg" % (1001)), fotoData)
+			Toolkit.saveFileContent((self.workDir + "/aijob_veriCode_%d.jpg" % (1001)), fotoData)
 			
 			print "please_input_verify_code:"
 			veriCode = sys.stdin.readline().rstrip()
@@ -67,7 +65,7 @@ class Recruit :
 			
 			postData = {
 					"rhr__email": self.loginName,
-					"user_name_addr":"asiainfo-linkage.com",
+					"user_name_addr":"asiainfo.com",
 					"rhr__password":self.loginPswd,
 					"identifying_code":veriCode,
 					"redirect":"",
@@ -75,38 +73,51 @@ class Recruit :
 					"y":"34",
 					"hasflash":"1"
 			}
-			
+		
 			self.navigator.call(loginUrl, None, postData)
 			
 			pageHtml = self.navigator.read()
-			print "pageHtml:%s" % (pageHtml)
+			print "pageHtml:%s,%s,%s" % (self.loginName, self.loginPswd, pageHtml)
 			resVal = ("/backend.php/hr/myjob/" in pageHtml)
 			
-		print "login_ailkjobs_successfully"
+		print "login_aijobs_successfully"
 		
 		return True		
 	
-	def doFillInfo(self, postData) :        
-		pageUrl = "http://auction.asiainfo-linkage.com/auction/bidstus.asp"
+	def fetchResume(self) :        
+		pageUrl = "http://aijob.asiainfo.com/backend.php/user/talpool/order/1/t/0" 	\
+				+ "?tal_type=0&tag_ids=锁定%28无%29%2C已发送Offer%28无%29%2C离职%28无%29&tag_ids_hidden=11-2%2C14-2%2C15-2" \
+				+ "&apply_days=&g_diploma_id=70&g_diploma_id_high=1&resume_exp_years=1&job_trade=&job_trade_hidden=&job_type="	\
+				+ "&job_type_hidden=&g_area=浙江省&g_area_hidden=86008000&system_user_from_id=不限&keyword=C%2B%2B&code=&name=&order=1"
 		
-		self.navigator.call(pageUrl, None, postData)
+		self.navigator.call(pageUrl, None)
 		
-		return self.navigator.read()
-	
-	def isAuctionWinned(self, pageHtml):
-		pattern = re.compile(r'bidding price must be')
+		pageHtml = self.navigator.read()
 		
-		#print pageHtml
-		patternRes = pattern.search(pageHtml)
+		Toolkit.saveFileContent(self.workDir + "/resumeList.htm", pageHtml);
+				
+		tblParser = TableParser()
+		tblParser.feed(pageHtml)
 		
-		resVal = (patternRes == None)
-		
-		if not resVal: print "isAuctionWinned_pageHtml: %s" % (pageHtml)
-		
-		return resVal
+		return pageHtml
 	
 	def perform(self):
-		self.login()
+		#self.login()
+		#self.fetchResume();
+		pageHtml = Toolkit.getFileContent(self.workDir + "/resumeList.htm");
+		tblParser = TableParser("favoriteList")
+		tblParser.feed(pageHtml)
+		
+		print "dataList result:"
+		for cellList in tblParser.dataList:
+			for valList in cellList:
+				print "{",
+				for val in valList:
+					if val != valList[0]:
+						print ",",
+					print val,
+				print "}, ",
+			print "\n" 
 		
 		resVal = True
 		return resVal
@@ -119,11 +130,11 @@ if __name__ == '__main__':
 	userName = 'lijj'
 	userPswd = os.getenv("aintPswd")
 	
-	loginName = "lijj"
-	loginPswd = "xxxxxx"
+	loginName = "kangcl"
+	loginPswd = os.getenv("kangPswd")
 	
 	debugMode = False
-	workDir = "E:/TempFile"
+	workDir = "D:/ZoomZone/AiJobDat"
 	
 	recruit = Recruit(userName, userPswd, workDir, loginName, loginPswd, debugMode)
 	

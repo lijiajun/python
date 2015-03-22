@@ -7,75 +7,17 @@ Created on 2014-3-20
 import os
 import time
 import locale
+
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
 
-from Navigator import Navigator
 from HTMLParser import HTMLParser
 
-from email import encoders
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email.utils import COMMASPACE,formatdate
-from email.mime.multipart import MIMEMultipart
+from ss.util.Navigator import Navigator
+from ss.util.HtmlParser import FormParser
 
-class Loger:
-	def printSecSepor(self) :
-		print ""
-		print "========================================================================"
-		print "========================================================================"
-		print "========================================================================"
-		print ""
-		
-class FormParser(HTMLParser):
-	def __init__(self, formName):
-		self.formName = None
-		if formName: 
-			self.formName = formName
-			
-		self.enterTag = 0
-		self.leaveTag = 0
-		
-		self.fieldDict = {}
-		HTMLParser.__init__(self)
-		
-	def getAttrDict(self, attrs) :
-		attrDict = {}
-		for attr in attrs:
-			attrDict[attr[0]] = attr[1]
-		return attrDict
-		
-	def handle_starttag(self, tag, attrs):
-		if tag == "form":
-			if self.formName:
-				for attr in attrs:
-					if attr[0] == "name":
-						if attr[1] == self.formName:          
-							self.enterTag = 1
-							#print "enter form"
-							break
-			else:
-				self.enterTag = 1
-			
-		if self.enterTag == 1 and self.leaveTag == 0:
-			if tag == "input":
-				attrDict = self.getAttrDict(attrs)
-				if attrDict.has_key("type") \
-						and attrDict["type"] == "hidden" and attrDict["name"]:
-					if attrDict.has_key("value"):
-						self.fieldDict[attrDict["name"]] = attrDict["value"]
-					else:
-						self.fieldDict[attrDict["name"]] = ""
-  
-	def handle_endtag(self, tag):
-		if tag == "form":           
-			if self.enterTag == 1:
-				self.leaveTag= 1
-				#print "leave form"
-			
-	def handle_data(self, data):
-		pass
+from ss.util.Toolkit import Toolkit
 
 class OrderResultParser(HTMLParser):
 	def __init__(self):
@@ -195,51 +137,10 @@ class ConfirmResultParser(HTMLParser):
 			if self.curTag == "td":
 				if "预定成功！资源预定成功Email已经发送到您的Email信箱。" in data:
 					self.fieldDict["success"] = True
-
-def getFileContent(fileName):
-	fileObj = open(fileName, "rt") 
-	
-	fileContent = ""
-	strLine = fileObj.readline()
-	
-	while strLine:
-		fileContent = fileContent + strLine
-		strLine = fileObj.readline()
-	
-	return fileContent
-
-def sendMail(cfgDict, mailFrom, mailToList, subject, content, fileList=[]): 
-	assert type(cfgDict) == dict 
-	assert type(mailToList) == list 
-	assert type(fileList) == list 
- 
-	mimeMsg = MIMEMultipart() 
-	mimeMsg['From'] = mailFrom 
-	mimeMsg['Subject'] = subject 
-	mimeMsg['To'] = COMMASPACE.join(mailToList)     #COMMASPACE==', ' 
-	mimeMsg['Date'] = formatdate(localtime=True) 
-	mimeMsg.attach(MIMEText(content, "html", "UTF-8")) 
- 
-	for fileName in fileList: 
-		part = MIMEBase('application', 'octet-stream') #'octet-stream': binary data 
-		part.set_payload(open(file, 'rb'.read())) 
-		encoders.encode_base64(part) 
-		part.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(fileName)) 
-		mimeMsg.attach(part) 
- 
-	import smtplib 
-	smtp = smtplib.SMTP(cfgDict['host']) 
-	smtp.login(cfgDict['user'], cfgDict['pswd']) 
-	smtp.sendmail(mailFrom, mailToList, mimeMsg.as_string()) 
-	smtp.close()
-	
-	return True
-	
 	
 class RoomBooker :
 	def __init__(self, userName, userPswd, debug=False):
 		self.debug = debug
-		self.loger = Loger()
 		
 		self.meetingRoom = ""
 		self.bookDate = "2000-01-01"
@@ -309,7 +210,7 @@ class RoomBooker :
 		pageHtml = self.queryInfo(qryPara)
 		if self.debug: 
 			print "queryHtml:" + pageHtml
-			self.loger.printSecSepor()
+			Toolkit.printSecSepor()
 		 
 		formParser = FormParser("Form1")
 		formParser.feed(pageHtml)
@@ -334,7 +235,7 @@ class RoomBooker :
 			
 			if self.debug: 
 				print "doOrderHtml:" + pageHtml
-				self.loger.printSecSepor()
+				Toolkit.printSecSepor()
 			
 			bookResParser = OrderResultParser()
 			bookResParser.feed(pageHtml)
@@ -369,7 +270,7 @@ class RoomBooker :
 		
 		if self.debug: 
 			print "doConfirm:" + pageHtml
-			self.loger.printSecSepor()
+			Toolkit.printSecSepor()
 		
 		confirmResParser = ConfirmResultParser()
 		confirmResParser.feed(pageHtml)
@@ -555,7 +456,10 @@ def doSendMail(userName, userPswd, booker, resVal, entireBgnTime, entireEndTime)
 	mailContent = "管理员, 你好:" +  "<br/><br/>"
 	mailContent = mailContent + "　　会_议_室: " + booker.meetingRoom + "<br/>"
 	mailContent = mailContent + "　　预定日期: " + booker.bookDate + "<br/>"
-	mailContent = mailContent + "　　失败时间: " + booker.bgnTime + " - " + booker.endTime + "<br/>"
+	
+	if not resVal:
+		mailContent = mailContent + "　　失败时间: " + booker.bgnTime + " - " + booker.endTime + "<br/>"
+		
 	mailContent = mailContent + "　　整体时间: " + entireBgnTime + " - " + entireEndTime + "<br/>"
 	
 	if not resVal:
@@ -570,7 +474,7 @@ def doSendMail(userName, userPswd, booker, resVal, entireBgnTime, entireEndTime)
 			+ "　　　　　　　　　　　　　　　　　　　　　　　　　　　　会议室预定机<br/><br/>"  \
 			+ "　　　　　　　　　　　　　　　　　　　　　　　　　　　　" + todayDate + "<br/>"
 	
-	resVal = sendMail(mailCfgDict, mailFrom, mailToList, mailSubject, mailContent)
+	resVal = Toolkit.sendMail(mailCfgDict, mailFrom, mailToList, mailSubject, mailContent)
 	
 	return resVal
 
@@ -578,6 +482,8 @@ if __name__ == '__main__':
 	print "会议室预定机开始预订会议室......"
 	resVal = False
 	debugMode = False
+	
+	Toolkit.printSecSepor()
 	
 	userName = 'lijj'
 	userPswd = os.getenv("aintPswd")
