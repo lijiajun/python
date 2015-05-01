@@ -84,7 +84,7 @@ class Recruit :
 		
 		return True		
 	
-	def fetchResume(self) :        
+	def fetch_resume(self) :        
 		pageUrl = "http://aijob.asiainfo.com/backend.php/user/talpool/order/1/t/0" 	\
 				+ "?tal_type=0&tag_ids=锁定%28无%29%2C已发送Offer%28无%29%2C离职%28无%29&tag_ids_hidden=11-2%2C14-2%2C15-2" \
 				+ "&apply_days=&g_diploma_id=70&g_diploma_id_high=1&resume_exp_years=1&job_trade=&job_trade_hidden=&job_type="	\

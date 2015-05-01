@@ -2,3 +2,5 @@
 /input
 /.project
 /.pydevproject
+/io
+/ss/util/*.pyc

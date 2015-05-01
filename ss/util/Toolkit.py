@@ -6,11 +6,6 @@ Created on 2014-4-22
 # coding=utf-8
 
 import os
-import re
-import sys
-import time
-import locale
-from HTMLParser import HTMLParser
 
 from email import encoders
 from email.mime.base import MIMEBase

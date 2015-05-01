@@ -13,7 +13,7 @@ import re,sys
 class Navigator(object):
     # 默认的进度显示函数
     @staticmethod
-    def Percent(a,b,c):
+    def percent(a,b,c):
         i=float(a*b*100)/c
         if i>100.0:i=100.0
         x=int(i/2)

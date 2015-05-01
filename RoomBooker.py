@@ -37,7 +37,7 @@ class OrderResultParser(HTMLParser):
 		
 		HTMLParser.__init__(self)
 		
-	def getAttrDict(self, attrs) :
+	def get_attrDict(self, attrs) :
 		attrDict = {}
 		for attr in attrs:
 			attrDict[attr[0]] = attr[1]
@@ -96,7 +96,7 @@ class ConfirmResultParser(HTMLParser):
 		
 		HTMLParser.__init__(self)
 		
-	def getAttrDict(self, attrs) :
+	def get_attrDict(self, attrs) :
 		attrDict = {}
 		for attr in attrs:
 			attrDict[attr[0]] = attr[1]
