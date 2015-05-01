@@ -496,8 +496,8 @@ if __name__ == '__main__':
 	if userPswd =="console":
 		print "please_input_password: ",
 		userPswd = sys.stdin.readline().rstrip()
-	elif userPswd[0:8] == "AsiaINFO-":
-		encryptPswd=userPswd[8:]
+	elif userPswd[0:9] == "AsiaINFO-":
+		encryptPswd=userPswd[9:]
 		userPswd = Toolkit.decrypt(32, encryptPswd)
 	
 	booker = RoomBooker("ai\\" + userName, userPswd, debugMode)
