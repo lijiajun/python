@@ -4,7 +4,7 @@ Created on 2014-3-20
 '''
 # coding=utf-8
 
-import os
+import os,sys
 import time
 import locale
 
@@ -487,6 +487,18 @@ if __name__ == '__main__':
 	
 	userName = 'lijj'
 	userPswd = os.getenv("aintPswd")
+	
+	if len(sys.argv)>1:
+		userName = sys.argv[1]
+	if len(sys.argv)>2:
+		userPswd = sys.argv[2]
+	
+	if userPswd =="console":
+		print "please_input_password: ",
+		userPswd = sys.stdin.readline().rstrip()
+	elif userPswd[0:8] == "AsiaINFO-":
+		encryptPswd=userPswd[8:]
+		userPswd = Toolkit.decrypt(32, encryptPswd)
 	
 	booker = RoomBooker("ai\\" + userName, userPswd, debugMode)
 	#resVal = doBookInTurn(booker)
